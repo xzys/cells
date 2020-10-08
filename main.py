@@ -46,9 +46,9 @@ class Player:
 
     def process(self, world):
         """process inputs from program"""
-        self.move()
         self.process_scan(world)
         self.consume_nutrients(world)
+        self.move()
 
     def move(self):
         # apply drag before, so that it's taken into account when getting dest
