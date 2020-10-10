@@ -5,11 +5,6 @@ const TerserPlugin = require("terser-webpack-plugin");
 
 module.exports = merge(base, {
   mode: "production",
-  output: {
-    chunkFilename: '[name].bundle.js',
-    filename: '[name].bundle.js',
-    path: path.resolve(__dirname, '../', 'dist'),
-  },
   devtool: false,
   performance: {
     maxEntrypointSize: 900000,

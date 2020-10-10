@@ -42,9 +42,18 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: "./index.html"
     }),
-    new CopyWebpackPlugin({
+    new CopyPlugin({
       patterns: [
-        { from: '../pyodide' }
+        {
+          from: './pyodide',
+          to: 'pyodide',
+          filter: path => !!path.match(/pyodide\/pyodide\.*/),
+        },
+        {
+          from: '../simulation',
+          to: 'simulation',
+          filter: path => !!path.match(/.*\.py$/),
+        }
       ]
     })
   ]
