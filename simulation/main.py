@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 from random import randint
-import importlib
-import os
+# import os
 import time
 
 import lib
@@ -9,23 +8,22 @@ import lib.types
 import lib.cell
 
 
-PLAYERS_DIR = './players'
-
 player_context = {
         k: lib.__dict__[k]
         for k in lib.__all__
 }
 
+DIST_ERROR_MARGIN = 0.1
 
 class Player:
     max_accel: float = 5
     drag_coeff: float = 1/10
     size_coeff: float = 1/10
 
-    consume_rate: float = 2
+    consume_rate: float = 1
     max_size: float = 100
 
-    def __init__(self, filename):
+    def __init__(self, script):
         self.health = 100
         self.size = 20
         self.position = None
@@ -33,8 +31,7 @@ class Player:
         self.dest = None
         self.cell = lib.cell.CellInterface()
 
-        with open(filename) as f:
-            self.script = f.read()
+        self.script = script
 
         self.context = player_context.copy()
         self.context['cell'] = self.cell
@@ -44,27 +41,30 @@ class Player:
         self.cell.velocity = self.velocity.copy()
         exec(self.script, self.context)
 
-    def process(self, world):
+    def process(self, world, delta):
         """process inputs from program"""
         self.process_scan(world)
         self.consume_nutrients(world)
-        self.move()
+        self.move(delta)
 
-    def move(self):
+    def move(self, delta):
         # apply drag before, so that it's taken into account when getting dest
         # TODO drag should affect based on surface area not volume
-        self.velocity *= 1 - self.drag_coeff
-        self.velocity *= 1/(self.size * self.size_coeff)
+        self.velocity *= (1 - self.drag_coeff) * delta
 
         if self.cell.dest:
             target = self.cell.dest - self.position - self.velocity
             dist = target.magnitude()
-            # set acceleration
-            accel = target * min(self.max_accel / dist if dist > 0 else 0, 1)
-            # print('accel', accel, accel.magnitude())
-            self.velocity += accel 
+            if dist > DIST_ERROR_MARGIN:
+                # unit vector
+                direction = target / dist
+                mass = self.size * self.size_coeff
+                # set either max accel, or account for delta and mass
+                force = direction * min(self.max_accel, dist * mass)
+                
+                self.velocity += force / mass * delta
 
-        self.position += self.velocity
+        self.position += self.velocity * delta
 
     def process_scan(self, nearby):
         if self.cell.scan_requested:
@@ -73,7 +73,7 @@ class Player:
 
     def consume_nutrients(self, world):
         for i, f in enumerate(world.foods):
-            if f.position == self.position:
+            if (self.position - f.position).magnitude() < DIST_ERROR_MARGIN:
                 if self.size >= self.max_size:
                     return
 
@@ -85,19 +85,10 @@ class Player:
                 break
         
 
-
-def find_players():
-    players = []
-    files = [fn for fn in os.listdir(PLAYERS_DIR) if fn.endswith('.py')]
-    for fn in files:
-        players.append(Player(os.path.join(PLAYERS_DIR, fn)))
-    return players
-
-
 class World:
     size = lib.types.Vector(100, 100)
     num_initial_food: int = 100
-    max_food_size: float = 30
+    max_food_size: float = 20
     scan_distance: float = 25
 
     @classmethod
@@ -112,26 +103,20 @@ class World:
         return foods
 
     def __init__(self, players):
-        self.players = players
         self.foods = self.place_initial_food()
 
-    def start(self):
-        print('starting world...')
+        self.players = players
         for p in self.players:
             p.position = self.random_pos()
             p.velocity = lib.types.Vector(0, 0)
-        self.run()
 
-    def run(self):
-        while True:
-            for p in self.players:
-                p.step()
+    def update(self, delta):
+        for p in self.players:
+            p.step()
 
-            for p in self.players:
-                p.process(self)
+        for p in self.players:
+            p.process(self, delta)
 
-            time.sleep(0.2)
-    
     def get_nearby(self, player):
         results = []
         other_players = [p for p in self.players if p is not player]
@@ -147,7 +132,17 @@ class World:
 
 
 if __name__ == '__main__':
-    players = find_players()
+    import os
+    players = []
+
+    PLAYERS_DIR = './players'
+    files = [fn for fn in os.listdir(PLAYERS_DIR) if fn.endswith('.py')]
+    for fn in files:
+        with open(os.path.join(PLAYERS_DIR, fn)) as f:
+            players.append(Player(f.read()))
     
+    print('setting up world...')
     world = World(players)
-    world.start()
+    while True:
+        world.update(0.6)
+        time.sleep(0.1)

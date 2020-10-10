@@ -2,15 +2,21 @@ const webpack = require("webpack");
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   mode: "development",
+  output: {
+    chunkFilename: '[name].bundle.js',
+    filename: '[name].bundle.js',
+    path: path.resolve(__dirname, '../', 'dist'),
+  },
   devtool: "eval-source-map",
   module: {
     rules: [
       {
         test: /\.js$/,
-        exclude: /node_modules/,
+        exclude: /node_modules|pyodide/,
         use: {
           loader: "babel-loader"
         }
@@ -22,7 +28,7 @@ module.exports = {
       {
         test: /\.(gif|png|jpe?g|svg|xml)$/i,
         use: "file-loader"
-      }
+      },
     ]
   },
   plugins: [
@@ -35,6 +41,11 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       template: "./index.html"
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: '../pyodide' }
+      ]
     })
   ]
 };
