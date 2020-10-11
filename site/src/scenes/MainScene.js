@@ -8,12 +8,17 @@ class MainScene extends Phaser.Scene {
   create() {
     this.cameras.main.setBackgroundColor('#e5f1e3')
 
+    const codeInput = document.getElementById('code')
+    // preload this script
+    codeInput.value = playerScript
+    // TODO allow user to run their own code
+    
     const runSingleplayer = pyodide.pyimport('run_singleplayer')
 
     this.world = runSingleplayer(
       this.sys.game.config.width,
       this.sys.game.config.height,
-      playerScript
+      codeInput.value,
     )
 
     // link world to sprites
@@ -27,16 +32,17 @@ class MainScene extends Phaser.Scene {
     }
   }
 
+  /*
   update(time, delta) {
     this.world.update(time, delta / 50)
     for (const c of this.cells.children.entries) {
       c.sync()
     }
   }
+  */
 }
 
-const playerScript = `
-print('cell pos', cell.position)
+const playerScript = `print('cell pos', cell.position)
 for found in cell.scan():
     if type(found) is Nutrient:
         cell.set_destination(found.position)

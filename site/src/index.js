@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import BootScene from './scenes/BootScene'
 import MainScene from './scenes/MainScene'
+import './assets/main.sass'
 
 const config = {
   type: Phaser.AUTO,
-  parent: "phaser-example",
+  parent: 'game',
   width: 800,
   height: 600,
   scene: [
@@ -13,4 +14,4 @@ const config = {
   ]
 };
 
-const game = new Phaser.Game(config);
+const game = new Phaser.Game(config)
