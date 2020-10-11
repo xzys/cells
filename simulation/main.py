@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 from random import randint
-# import os
 import time
 
 import lib
@@ -14,6 +13,7 @@ player_context = {
 }
 
 DIST_ERROR_MARGIN = 0.1
+
 
 class Player:
     max_accel: float = 5
@@ -132,6 +132,7 @@ class World:
 
 
 if __name__ == '__main__':
+    print('running in python mode')
     import os
     players = []
 

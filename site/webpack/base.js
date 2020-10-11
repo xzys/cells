@@ -16,7 +16,7 @@ module.exports = {
     rules: [
       {
         test: /\.js$/,
-        exclude: /node_modules|pyodide/,
+        exclude: /node_modules|pyodide|.*\.py/,
         use: {
           loader: "babel-loader"
         }
