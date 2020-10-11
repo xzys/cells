@@ -14,6 +14,7 @@ class BootScene extends Phaser.Scene {
       this.load.text(fn, `simulation/${fn}`)
     }
     this.load.text('main.py', 'simulation/main.py')
+    window.boot = this
   }
 
   create() {
