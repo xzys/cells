@@ -14,6 +14,7 @@ class SyncedSprite extends Phaser.GameObjects.Sprite {
 
   sync() {
     if (this.pyobj.size <= 0) {
+      this.circle.destroy()
       this.destroy()
       return
     }
@@ -32,6 +33,7 @@ class Nutrient extends SyncedSprite {
 class Cell extends SyncedSprite {
   constructor(scene, pyobj) {
     super(scene, pyobj, 'cell', 0x35635b)
+    // this.circle.setStrokeStyle(1, 0x342056)
   }
 }
 

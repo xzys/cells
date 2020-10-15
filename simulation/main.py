@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from random import randint
 import time
+import math
 
 import lib
 import lib.types
@@ -16,25 +17,34 @@ DIST_ERROR_MARGIN = 0.1
 
 
 class Player:
+    def __init__(self, script):
+        self.cells = []
+        self.script = script
+
+
+class CellController:
     max_accel: float = 10
     drag_coeff: float = 1/10
     size_coeff: float = 1/10
 
     consume_rate: float = 2
-    step_interval_ms: int = 1000
+    step_interval_ms: int = 500
 
-    def __init__(self, script):
+    min_size_to_divide: int = 60
+
+    def __init__(self, player: Player, position: lib.types.Vector):
         self.health = 100
-        self.size = 50
-        self.position = None
-        self.velocity = None
+        self.size: int = 50
+        self.position = position
+        self.velocity = lib.types.Vector(0, 0)
         self.dest = None
         self.cell = lib.cell.CellInterface()
 
         self.context = player_context.copy()
         self.context['cell'] = self.cell
 
-        self.script = script
+        self.player = player
+        self.script = player.script
         self.last_step = 0
 
     def step(self, time):
@@ -43,6 +53,7 @@ class Player:
         if time - self.last_step < self.step_interval_ms:
             return False
 
+        self.cell.size = self.size
         self.cell.position = self.position.copy()
         self.cell.velocity = self.velocity.copy()
         exec(self.script, self.context)
@@ -51,8 +62,9 @@ class Player:
 
     def process(self, world, time):
         """process inputs from program"""
-        self.process_scan(world)
         self.consume_nutrients(world, time)
+        self.process_scan(world)
+        self.process_divide()
 
     def move(self, delta):
         # apply drag before, so that it's taken into account when getting dest
@@ -72,21 +84,36 @@ class Player:
 
         self.position += self.velocity * delta
 
+    def consume_nutrients(self, world, time):
+        for i, n in enumerate(world.nutrients):
+            if (self.position - n.position).magnitude() < DIST_ERROR_MARGIN:
+                n.size -= self.consume_rate
+                if n.size <= 0:
+                    del world.nutrients[i]
+                self.size += min(self.consume_rate, self.size)
+                break
+        
     def process_scan(self, world):
         if self.cell.scan_requested:
             self.cell.scan_results = world.get_nearby(self)
             self.cell.scan_requested = False
 
-    def consume_nutrients(self, world, time):
-        for i, f in enumerate(world.nutrients):
-            if (self.position - f.position).magnitude() < DIST_ERROR_MARGIN:
-                f.size -= self.consume_rate
-                if f.size <= 0:
-                    del world.nutrients[i]
-                self.size += min(self.consume_rate, self.size)
-                print('eating!', self.size)
-                break
-        
+    def process_divide(self):
+        if self.cell.divide_requested:
+            if self.size >= self.min_size_to_divide:
+                c = CellController(self.player, self.position.copy())
+
+                # TODO let physics handle repulsion
+                angle_divide = math.atan2(self.velocity.y, self.velocity.x)
+                repulsion = lib.types.Vector(math.cos(angle_divide), math.sin(angle_divide)) * 10
+                c.velocity += repulsion 
+                self.player.cells.append(c)
+
+                self.velocity -= repulsion 
+                self.size = self.size // 2
+
+                self.cell.divide_requested = False
+
 
 class World:
     num_initial_food: int = 100
@@ -107,8 +134,8 @@ class World:
 
         self.players = players
         for p in self.players:
-            p.position = self.random_pos()
-            p.velocity = lib.types.Vector(0, 0)
+            c = CellController(p, self.random_pos())
+            p.cells.append(c)
 
     def random_pos(self):
         return lib.types.Vector(randint(0, self.size.x), randint(0, self.size.y))
@@ -116,23 +143,25 @@ class World:
     def update(self, time, delta):
         to_process = []
         for p in self.players:
-            if p.step(time):
-                to_process.append(p)
-            # move all cells, regardless
-            p.move(delta)
-        # process all cells that got run
-        for p in to_process:
-            p.process(self, time)
+            for c in p.cells:
+                if c.step(time):
+                    to_process.append(c)
+                # move all cells, regardless
+                c.move(delta)
 
-    def get_nearby(self, player):
+        # process all cells that got run
+        for c in to_process:
+            c.process(self, time)
+
+    def get_nearby(self, cell):
         results = []
-        other_players = [p for p in self.players if p is not player]
-        for x in self.nutrients + other_players:
-            dist = (player.position - x.position).magnitude()
+        other_cells = [c for p in self.players for c in p.cells if c is not cell]
+        for x in self.nutrients + other_cells:
+            dist = (cell.position - x.position).magnitude()
             if dist < self.scan_distance:
                 # if player, send a proxy that only has position 
-                if type(x) is Player:
-                    results.append((dist, lib.types.Robot(x.position, x.size)))
+                if type(x) is CellController:
+                    results.append((dist, lib.types.Cell(x.position, x.size)))
                 else:
                     results.append((dist, x))
         return [x for dist, x in sorted(results, key=lambda tup: tup[0])]
@@ -153,7 +182,10 @@ if __name__ == '__main__':
         with open(os.path.join(PLAYERS_DIR, fn)) as f:
             players.append(Player(f.read()))
     
-    world = World(players)
+    world = World(100, 100, players)
+    t = time.time()
+    delta = 1000
     while True:
-        world.update(0.6)
-        time.sleep(0.1)
+        world.update(t, delta/100)
+        time.sleep(delta/1000)
+        t += delta
