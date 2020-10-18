@@ -8,16 +8,12 @@ const config = {
   parent: 'game',
   width: 800,
   height: 600,
-  // pixelArt: true,
-  // roundPixels: true,
-  /*
   physics: {
     default: 'arcade',
     arcade: {
       debug: true
     }
   },
-  */
   scene: [
     BootScene,
     MainScene

@@ -5,8 +5,8 @@ import math
 
 @dataclass
 class Vector:
-    x: int
-    y: int
+    x: float
+    y: float
 
     def __eq__(self, v):
         return self.x == v.x and self.y == v.y 

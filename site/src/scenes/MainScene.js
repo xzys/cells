@@ -5,10 +5,11 @@ const playerScript = `
 for found in cell.scan():
     if type(found) is Nutrient:
         cell.set_destination(found.position)
+        print(found.position)
         break
 
-# if cell.size > 60:
-#     cell.divide()
+if cell.size > 60:
+    cell.divide()
 `
 
 class MainScene extends Phaser.Scene {
@@ -41,33 +42,40 @@ class MainScene extends Phaser.Scene {
     
     const runSingleplayer = pyodide.pyimport('run_singleplayer')
 
+    this.nutrients = this.physics.add.group()
+    this.cells = this.physics.add.group({
+        bounceX: 1,
+        bounceY: 1,
+    })
+
     this.world = runSingleplayer(
       this.sys.game.config.width,
       this.sys.game.config.height,
       codeInput.value,
+      this,
     )
 
-    // link world to sprites
-    this.nutrients = this.add.group()
-    this.cells = this.add.group()
-    for (const n of this.world.nutrients) {
-      this.nutrients.add(new Nutrient(this, n))
-    }
-    for (const p of this.world.players) {
-      for (const c of p.cells) {
-        this.cells.add(new Cell(this, c))
-      }
-    }
+    this.physics.add.collider(this.cells, this.cells)
+    this.physics.add.collider(this.cells, this.nutrients)
+  }
+
+  addCell(c) {
+    this.cells.add(new Cell(this, c))
+  }
+
+  addNutrient(n) {
+    this.nutrients.add(new Nutrient(this, n))
   }
 
   update(time, delta) {
     this.cameraControls.update(delta)
     this.world.update(time, delta / 50)
+    for (const c of this.cells.children.entries) {
+      c.processDest()
+      c.sync()
+    }
     for (const n of this.nutrients.children.entries) {
       n.sync()
-    }
-    for (const c of this.cells.children.entries) {
-      c.sync()
     }
   }
 
