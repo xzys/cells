@@ -23,11 +23,11 @@ class Player:
         self.cells = []
         self.script = script
 
-size_coeff: float = 1/10
 
 class CellController:
     max_accel: float = 50
     drag_coeff: float = 1/10
+    size_coeff: float = 1/10
 
     consume_rate: float = 2
     step_interval_ms: int = 500
@@ -110,8 +110,9 @@ class CellController:
                 new_size = self.size // 2
 
                 new_pos = self.position.copy()
-                angle_divide = math.atan2(self.velocity.y, self.velocity.x)
-                new_pos += lib.types.Vector(math.sin(angle_divide), -math.cos(angle_divide)) * get_radius(self.size)
+                # angle_divide = math.atan2(self.velocity.y, self.velocity.x)
+                # new_pos += lib.types.Vector(math.sin(angle_divide), -math.cos(angle_divide)) * get_radius(self.size)
+                new_pos += lib.types.Vector(get_radius(self.size), get_radius(self.size))
                 print('new pos', new_pos)
 
                 c = CellController(self.player, new_pos, new_size)
@@ -131,7 +132,7 @@ class World:
     num_initial_food: int = 100
     min_food_size: float = 10
     max_food_size: float = 20
-    scan_distance: float = 100
+    scan_distance: float = 400
 
     initial_cell_size: int = 50
 

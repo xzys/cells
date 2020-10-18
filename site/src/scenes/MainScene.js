@@ -5,11 +5,10 @@ const playerScript = `
 for found in cell.scan():
     if type(found) is Nutrient:
         cell.set_destination(found.position)
-        print(found.position)
         break
 
 if cell.size > 60:
-    cell.divide()
+   cell.divide()
 `
 
 class MainScene extends Phaser.Scene {
@@ -44,8 +43,8 @@ class MainScene extends Phaser.Scene {
 
     this.nutrients = this.physics.add.group()
     this.cells = this.physics.add.group({
-        bounceX: 1,
-        bounceY: 1,
+      bounceX: 0.99,
+      bounceY: 0.99,
     })
 
     this.world = runSingleplayer(
@@ -57,19 +56,21 @@ class MainScene extends Phaser.Scene {
 
     this.physics.add.collider(this.cells, this.cells)
     this.physics.add.collider(this.cells, this.nutrients)
+
+    this.debugText = this.add.text(10, 10, '', {font: '12px monospace', fill: '#000000'})
   }
 
+  /* called by python world to sync state*/
   addCell(c) {
     this.cells.add(new Cell(this, c))
   }
-
   addNutrient(n) {
     this.nutrients.add(new Nutrient(this, n))
   }
 
   update(time, delta) {
     this.cameraControls.update(delta)
-    this.world.update(time, delta / 50)
+    this.world.update(time, delta)
     for (const c of this.cells.children.entries) {
       c.processDest()
       c.sync()
@@ -77,6 +78,8 @@ class MainScene extends Phaser.Scene {
     for (const n of this.nutrients.children.entries) {
       n.sync()
     }
+
+    this.debugText.setText(`FPS: ${(1000/delta).toFixed(3)}\n${this.cells.children.entries.length} cells`);
   }
 
   destory() {

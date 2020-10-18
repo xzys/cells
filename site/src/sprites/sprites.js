@@ -48,22 +48,19 @@ class Cell extends SyncedSprite {
   processDest(delta) {
     if (this.pyobj.cell.dest) {
       const mass = this.pyobj.size * this.pyobj.size_coeff
-
-      const target = new Phaser.Math.Vector2(this.pyobj.cell.dest.x, this.pyobj.cell.dest.y)
-        .subtract(this.body.center)
-
-      const dist = target.length()
       const speed = this.body.velocity.length()
       const decelTime = speed / (this.pyobj.max_accel / mass)
 
-      let force
-      if (speed * decelTime / 2 >= dist) {
-        force = target.normalize().scale(-this.pyobj.max_accel)
-      } else {
-        force = target.normalize().scale(Math.min(this.pyobj.max_accel, dist * mass))
-      }
+      const target = new Phaser.Math.Vector2(this.pyobj.cell.dest.x, this.pyobj.cell.dest.y)
+        .subtract(this.body.center)
+        .subtract(this.body.velocity.clone().scale(decelTime))
+
+      const dist = target.length()
+      const force = target.normalize().scale(Math.min(this.pyobj.max_accel, dist * mass))
 
       this.setAcceleration(force.x / mass, force.y / mass)
+    } else {
+      this.setAcceleration(0, 0)
     }
   }
 }
