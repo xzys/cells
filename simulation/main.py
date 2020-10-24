@@ -25,7 +25,7 @@ class Player:
 
 
 class CellController:
-    max_accel: float = 50
+    max_accel: float = 100
     drag_coeff: float = 1/10
     size_coeff: float = 1/10
 
@@ -68,26 +68,6 @@ class CellController:
         self.process_scan(world)
         self.process_divide(world)
 
-    """
-    def move(self, delta):
-        # apply drag before, so that it's taken into account when getting dest
-        # TODO drag should affect based on surface area not volume
-        self.velocity *= (1 - self.drag_coeff) * delta
-
-        if self.cell.dest:
-            target = self.cell.dest - self.position - self.velocity
-            dist = target.magnitude()
-            if dist > DIST_ERROR_MARGIN:
-                # unit vector
-                direction = target / dist
-                mass = self.size * self.size_coeff
-                # set either max accel, or account for delta and mass
-                force = direction * min(self.max_accel, dist * mass)
-                self.velocity += force / mass * delta
-
-        self.position += self.velocity * delta
-    """
-
     def consume_nutrients(self, world, time):
         for i, n in enumerate(world.nutrients):
             if ((self.position - n.position).magnitude() <
@@ -96,7 +76,7 @@ class CellController:
                 n.size -= self.consume_rate
                 if n.size <= 0:
                     del world.nutrients[i]
-                self.size += min(self.consume_rate, self.size)
+                self.size += min(self.consume_rate, n.size)
                 break
         
     def process_scan(self, world):
@@ -108,30 +88,17 @@ class CellController:
         if self.cell.divide_requested:
             if self.size >= self.min_size_to_divide:
                 new_size = self.size // 2
-
-                new_pos = self.position.copy()
-                # angle_divide = math.atan2(self.velocity.y, self.velocity.x)
-                # new_pos += lib.types.Vector(math.sin(angle_divide), -math.cos(angle_divide)) * get_radius(self.size)
-                new_pos += lib.types.Vector(get_radius(self.size), get_radius(self.size))
-                print('new pos', new_pos)
-
-                c = CellController(self.player, new_pos, new_size)
-
-                # TODO let physics handle repulsion
-                # repulsion = 
-                # c.velocity += repulsion 
-                world.add_cell(self.player, c)
-
-                # self.velocity -= repulsion 
                 self.size = new_size
 
+                c = CellController(self.player, self.position.copy(), new_size)
+                world.add_cell(self.player, c)
+
                 self.cell.divide_requested = False
-    
 
 class World:
     num_initial_food: int = 100
     min_food_size: float = 10
-    max_food_size: float = 20
+    max_food_size: float = 10
     scan_distance: float = 400
 
     initial_cell_size: int = 50
@@ -162,8 +129,6 @@ class World:
             for c in p.cells:
                 if c.step(time):
                     to_process.append(c)
-                # move all cells, regardless
-                # c.move(delta)
 
         # process all cells that got run
         for c in to_process:

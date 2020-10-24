@@ -1,30 +1,27 @@
-const libFiles = [
-  'lib/__init__.py',
-  'lib/cell.py',
-  'lib/types.py',
-]
+import Phaser from 'phaser'
+
+const simLibFiles = SIM_LIB_FILES
 
 class BootScene extends Phaser.Scene {
-  constructor(test) {
+  constructor() {
     super({ key: 'BootScene' })
   }
 
   preload() {
-    for (const fn of libFiles) {
+    for (const fn of simLibFiles) {
       this.load.text(fn, `simulation/${fn}`)
     }
     this.load.text('main.py', 'simulation/main.py')
-    window.boot = this
   }
 
   create() {
     this.loadPyodide().then(() => {
-      this.loadSimulation()
+      this.loadSimulation(window.pyodide)
       this.scene.start('MainScene');
     })
   }
 
-  loadPyodide() {
+  loadPyodide(pyodide) {
     return new Promise((resolve, reject) => {
       const scriptUrl = 'pyodide/pyodide.js'
       window.languagePluginUrl = 'pyodide/'
@@ -46,7 +43,7 @@ def write_file(fn, contents):
     f.write(contents)`)
 
     const writeFile = pyodide.pyimport('write_file')
-    for (const fn of libFiles) {
+    for (const fn of simLibFiles) {
       const contents = this.sys.cache.text.get(fn)
       writeFile(fn, contents)
     }

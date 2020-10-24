@@ -1,8 +1,8 @@
 const webpack = require("webpack");
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const CopyPlugin = require('copy-webpack-plugin');
+const VueLoaderPlugin = require('vue-loader/lib/plugin')
 
 module.exports = {
   mode: "development",
@@ -22,6 +22,31 @@ module.exports = {
         }
       },
       {
+        test: /\.s[ac]ss$/i,
+        use: ['style-loader', 'css-loader', 'sass-loader']
+      },
+      /* // not working right now, debug later
+      {
+        test: /\.s[ac]ss$/i,
+        use: [
+          'vue-style-loader',
+          'css-loader',
+          {
+            loader: 'sass-loader',
+            options: {
+              sassOptions: {
+                indentedSyntax: true
+              }
+            }
+          }
+        ]
+      },
+      */
+      {
+        test: /\.vue$/,
+        loader: 'vue-loader'
+      },
+      {
         test: [/\.vert$/, /\.frag$/],
         use: "raw-loader"
       },
@@ -29,16 +54,10 @@ module.exports = {
         test: /\.(gif|png|jpe?g|svg|xml)$/i,
         use: "file-loader"
       },
-      {
-        test: /\.s[ac]ss$/i,
-        use: ['style-loader', 'css-loader', 'sass-loader'],
-      }
     ]
   },
   plugins: [
-    new CleanWebpackPlugin({
-      root: path.resolve(__dirname, "../")
-    }),
+    new VueLoaderPlugin(),
     new webpack.DefinePlugin({
       CANVAS_RENDERER: JSON.stringify(true),
       WEBGL_RENDERER: JSON.stringify(true)
@@ -49,7 +68,7 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         {
-          from: './pyodide',
+          from: '../pyodide',
           to: 'pyodide',
           filter: path => !!path.match(/pyodide\/pyodide\.*/),
         },
