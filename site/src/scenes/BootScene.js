@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 
-const simLibFiles = SIM_LIB_FILES
+const simLibFiles = SIM_LIB_FILES // eslint-disable-line
 
 class BootScene extends Phaser.Scene {
   constructor() {
@@ -21,7 +21,7 @@ class BootScene extends Phaser.Scene {
     })
   }
 
-  loadPyodide(pyodide) {
+  loadPyodide() {
     return new Promise((resolve, reject) => {
       const scriptUrl = 'pyodide/pyodide.js'
       window.languagePluginUrl = 'pyodide/'
@@ -29,13 +29,13 @@ class BootScene extends Phaser.Scene {
       script.src = scriptUrl;
       script.onerror = reject
       script.onload = () => {
-        languagePluginLoader.then(resolve)
+        window.languagePluginLoader.then(resolve)
       }
       document.head.appendChild(script);
     })
   }
 
-  loadSimulation() {
+  loadSimulation(pyodide) {
     console.log('loading files');
     pyodide.runPython(`
 def write_file(fn, contents):

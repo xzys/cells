@@ -43,7 +43,7 @@ class MainScene extends Phaser.Scene {
     // preload this script
     this.codeInput.value = playerScript
     
-    const runSingleplayer = pyodide.pyimport('run_singleplayer')
+    const runSingleplayer = window.pyodide.pyimport('run_singleplayer')
 
     this.nutrients = this.physics.add.group()
     this.cells = this.physics.add.group({
