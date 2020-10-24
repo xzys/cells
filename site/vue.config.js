@@ -30,13 +30,12 @@ module.exports = {
         SIM_LIB_FILES: webpack.DefinePlugin.runtimeValue(
           () => JSON.stringify(
             readDirRecursive('../simulation', ['py'])
-              .filter(fn => fn.startsWith('lib'))),
+              .filter(fn => fn.startsWith('lib'))
+          ),
           true
         ),
       }),
-      new HtmlWebpackPlugin({
-        template: "./index.html"
-      }),
+      new HtmlWebpackPlugin({ template: "./index.html" }),
       new CopyPlugin({
         patterns: [
           {
@@ -62,5 +61,14 @@ module.exports = {
       .exclude
         .add('/pyodide/')
         .end()
+
+    const svgRule = config.module.rule('svg')
+    svgRule.uses.clear()
+    svgRule
+      .use('vue-loader')
+        .loader('vue-loader')
+        .end()
+      .use('vue-svg-loader')
+        .loader('vue-svg-loader');
   }
 }

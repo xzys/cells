@@ -1,23 +1,22 @@
 <template>
-  <div class="game-container">
+  <div>
     <Game />
-    <div class="ui-container">
-      <div class="code-container">
-        <textarea id="code"></textarea>
-      </div>
-    </div>
-    <div class="debug-text" id="debug-text">TEST</div>
+    <GameInterface />
   </div>
 </template>
 
 <script>
 import Game from './Game.vue'
+import GameInterface from './components/GameInterface.vue'
 import './assets/main.sass'
 
 export default {
   name: 'App',
   components: {
-    Game
+    Game,
+    GameInterface
   }
 }
 </script>
+
+<style src="./assets/tailwind.css">

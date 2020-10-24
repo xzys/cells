@@ -5,7 +5,7 @@ let C = {
     NUTRIENTS: 0xa3cd9e,
   },
 
-  repelCellDist: 3,
+  repelCellDist: 5,
   repelCellForce: 0.01
 }
 

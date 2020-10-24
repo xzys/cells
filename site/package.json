@@ -29,6 +29,7 @@
     "style-loader": "^2.0.0",
     "terser-webpack-plugin": "^2.2.1",
     "vue-loader": "^15.9.3",
+    "vue-svg-loader": "^0.17.0-beta.2",
     "vue-template-compiler": "^2.6.12",
     "webpack": "^4.41.2",
     "webpack-cli": "^3.3.10",
@@ -36,21 +37,10 @@
     "webpack-merge": "^4.2.2"
   },
   "dependencies": {
+    "heroicons": "^0.4.2",
     "phaser": "^3.20.1",
-    "vue": "^2.6.12"
-  },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/essential",
-      "eslint:recommended"
-    ],
-    "parserOptions": {
-      "parser": "babel-eslint"
-    },
-    "rules": {}
+    "tailwindcss": "^1.9.6",
+    "vue": "^2.6.12",
+    "vue2-ace-editor": "0.0.15"
   }
 }
