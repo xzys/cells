@@ -9,7 +9,9 @@
       </div>
 
       <div class="flex-1"></div>
-      <div class="button-icon" v-if="scriptModified" @click="saveScript">
+      <div class="button-icon"
+        v-if="scriptModified"
+        @click="saveScript">
         <IconRefresh class="icon"/>
       </div>
       <div class="button-icon button-inactive">

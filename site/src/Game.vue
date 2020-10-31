@@ -10,6 +10,7 @@
 import Phaser from 'phaser';
 import BootScene from './scenes/BootScene'
 import MainScene from './scenes/MainScene'
+// import TestScene from './scenes/TestScene'
 
 import eventService from './services/eventService'
 
@@ -38,7 +39,8 @@ export default {
       },
       scene: [
         BootScene,
-        MainScene
+        MainScene,
+        // TestScene
       ],
       events: {
         bus: eventService.bus

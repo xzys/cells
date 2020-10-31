@@ -108,6 +108,7 @@ class CellController:
 
 
 class FileBridge:
+    """class to act as stdout and stderr"""
     def __init__(self, cell):
         self.buffer = []
         self.cell = cell
