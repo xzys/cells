@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import C from '../constants'
+import C from '../services/constantsService'
 
 const radiusFromArea = area => Math.sqrt(area/Math.PI)
 

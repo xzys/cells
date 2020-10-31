@@ -1,17 +1,7 @@
 import Phaser from 'phaser'
 import { Nutrient, Cell } from '../sprites/sprites'
-import C from '../constants'
-
-const playerScript = `
-# print('cell pos', cell.position)
-for found in cell.scan():
-    if type(found) is Nutrient:
-        cell.set_destination(found.position)
-        break
-
-if cell.size > 100:
-   cell.divide()
-`
+import C from '../services/constantsService'
+import eventService from '../services/eventService'
 
 class MainScene extends Phaser.Scene {
   constructor() {
@@ -24,27 +14,27 @@ class MainScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(C.colors.BACKGROUND)
 
     // camera controls
-    const cursors = this.input.keyboard.createCursorKeys()
+    const cursors = this.input.keyboard.addKeys({
+      up: Phaser.Input.Keyboard.KeyCodes.UP,
+      down: Phaser.Input.Keyboard.KeyCodes.DOWN,
+      left: Phaser.Input.Keyboard.KeyCodes.LEFT,
+      right: Phaser.Input.Keyboard.KeyCodes.RIGHT,
+    })
     this.cameraControls = new Phaser.Cameras.Controls.FixedKeyControl({
-        camera: this.cameras.main,
-        left: cursors.left,
-        right: cursors.right,
-        up: cursors.up,
-        down: cursors.down,
-        zoomIn: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q),
-        zoomOut: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),
-        speed: 0.5
+      camera: this.cameras.main,
+      left: cursors.left,
+      right: cursors.right,
+      up: cursors.up,
+      down: cursors.down,
+      // zoomIn: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q),
+      // zoomOut: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E),
+      speed: 0.5
     })
 
     this.debugText = document.getElementById('debug-text')
-    this.codeInput = document.getElementById('code')
 
-    // TODO allow user to run their own code
-    // preload this script
-    this.codeInput.value = playerScript
-    
+    // setup world
     const runSingleplayer = window.pyodide.pyimport('run_singleplayer')
-
     this.nutrients = this.physics.add.group()
     this.cells = this.physics.add.group({
       bounceX: 1,
@@ -54,14 +44,36 @@ class MainScene extends Phaser.Scene {
     this.world = runSingleplayer(
       this.sys.game.config.width,
       this.sys.game.config.height,
-      this.codeInput.value,
+      '',
       this,
     )
 
     this.physics.add.collider(this.cells, this.nutrients)
     this.physics.add.collider(this.cells, this.cells) 
+
+    // setup event handlers
+    eventService.bus.on(eventService.events.MODIFY_SCRIPT, this.onCodeChange, this)
+    eventService.bus.on(eventService.events.PLAY_WORLD, this.onPlay, this)
+    eventService.bus.on(eventService.events.PAUSE, this.onPause, this)
+    eventService.bus.emit(eventService.events.ON_READY, true)
   }
 
+  /* event handlers */
+  onPause() { this.physics.world.isPaused = true  }
+  onPlay() { this.physics.world.isPaused = false  }
+  onCodeChange(script) {
+    this.world.update_script(script)
+  }
+
+  /* called from python world to sync state */
+  addCell(c) {
+    this.cells.add(new Cell(this, c))
+  }
+  addNutrient(n) {
+    this.nutrients.add(new Nutrient(this, n))
+  }
+
+  /* game loop */
   update(time, delta) {
     this.world.update(time, delta)
     for (const n of this.nutrients.children.entries) {
@@ -103,20 +115,12 @@ class MainScene extends Phaser.Scene {
     }
   }
 
-  /* called by python world to sync state*/
-  addCell(c) {
-    this.cells.add(new Cell(this, c))
-  }
-  addNutrient(n) {
-    this.nutrients.add(new Nutrient(this, n))
-  }
-
-  destory() {
+  destroy() {
     for (const n of this.nutrients.children.entries) {
-      n.pyobj.destory()
+      n.pyobj.destroy()
     }
     for (const c of this.cells.children.entries) {
-      c.pyobj.destory()
+      c.pyobj.destroy()
     }
     super.destroy()
   }

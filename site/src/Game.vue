@@ -11,10 +11,15 @@ import Phaser from 'phaser';
 import BootScene from './scenes/BootScene'
 import MainScene from './scenes/MainScene'
 
-export default {
+import eventService from './services/eventService'
 
-  mounted() {
-    /*
+export default {
+  data() {
+    return {
+      game: null
+    }
+  },
+  created() {
     const config = {
       type: Phaser.AUTO,
       parent: 'game',
@@ -24,6 +29,7 @@ export default {
         default: 'arcade',
         arcade: {
           // debug: true
+          isPaused: true,
         }
       },
       scale: {
@@ -33,11 +39,13 @@ export default {
       scene: [
         BootScene,
         MainScene
-      ]
+      ],
+      events: {
+        bus: eventService.bus
+      },
     }
-
-    const game = new Phaser.Game(config)
-    */
+    // dont bind to vue to avoid performance hit
+    window.game = new Phaser.Game(config)
   }
 }
 </script>

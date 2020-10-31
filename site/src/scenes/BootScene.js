@@ -1,6 +1,8 @@
 import Phaser from 'phaser'
+import C from '../services/constantsService'
 
-const simLibFiles = SIM_LIB_FILES // eslint-disable-line
+// eslint-disable-next-line
+const simLibFiles = SIM_LIB_FILES
 
 class BootScene extends Phaser.Scene {
   constructor() {
@@ -15,6 +17,8 @@ class BootScene extends Phaser.Scene {
   }
 
   create() {
+    this.cameras.main.setBackgroundColor(C.colors.BACKGROUND)
+
     this.loadPyodide().then(() => {
       this.loadSimulation(window.pyodide)
       this.scene.start('MainScene');

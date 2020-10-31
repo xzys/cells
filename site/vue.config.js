@@ -30,7 +30,7 @@ module.exports = {
         SIM_LIB_FILES: webpack.DefinePlugin.runtimeValue(
           () => JSON.stringify(
             readDirRecursive('../simulation', ['py'])
-              .filter(fn => fn.startsWith('lib'))
+              .filter(fn => fn !== 'main.py')
           ),
           true
         ),
