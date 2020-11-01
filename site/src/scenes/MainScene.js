@@ -32,6 +32,7 @@ class MainScene extends Phaser.Scene {
     })
 
     this.debugText = document.getElementById('debug-text')
+    this.debugTextUpdated = Date.now()
 
     // setup world
     const runSingleplayer = window.pyodide.pyimport('run_singleplayer')
@@ -54,13 +55,17 @@ class MainScene extends Phaser.Scene {
     // setup event handlers
     eventService.bus.on(eventService.events.MODIFY_SCRIPT, this.onCodeChange, this)
     eventService.bus.on(eventService.events.PLAY_WORLD, this.onPlay, this)
-    eventService.bus.on(eventService.events.PAUSE, this.onPause, this)
+    eventService.bus.on(eventService.events.PAUSE_WORLD, this.onPause, this)
     eventService.bus.emit(eventService.events.ON_READY, true)
   }
 
   /* event handlers */
-  onPause() { this.physics.world.isPaused = true  }
-  onPlay() { this.physics.world.isPaused = false  }
+  onPause() {
+    this.physics.world.isPaused = true
+  }
+  onPlay() {
+    this.physics.world.isPaused = false
+  }
   onCodeChange(script) {
     this.world.update_script(script)
   }
@@ -75,21 +80,25 @@ class MainScene extends Phaser.Scene {
 
   /* game loop */
   update(time, delta) {
-    this.world.update(time, delta)
-    for (const n of this.nutrients.children.entries) {
-      n.sync()
+    if (!this.physics.world.isPaused) {
+      this.world.update(time, delta)
+      for (const n of this.nutrients.children.entries) {
+        n.sync()
+      }
+      for (const c of this.cells.children.entries) {
+        c.processDest()
+        c.sync()
+      }
+      this.repelCells(delta)
     }
-    for (const c of this.cells.children.entries) {
-      c.processDest()
-      c.sync()
-    }
-    this.repelCells(delta)
 
     this.cameraControls.update(delta)
-
-    this.debugText.textContent = (
-      `FPS: ${(1000/delta).toFixed(3)}\n` +
-      `${this.cells.children.entries.length} cells`)
+    if (Date.now() - this.debugTextUpdated > 250) {
+      this.debugText.textContent = (
+        `FPS: ${(1000/delta).toFixed(3)}\n` +
+        `${this.cells.children.entries.length} cells`)
+      this.debugTextUpdated = Date.now()
+    }
   }
 
   // a repelling force between cells that helps ease the buggy collisions
@@ -122,6 +131,7 @@ class MainScene extends Phaser.Scene {
     for (const c of this.cells.children.entries) {
       c.pyobj.destroy()
     }
+    this.world.destory()
     super.destroy()
   }
 }

@@ -29,6 +29,10 @@ class Vector:
     def copy(self):
         return Vector(self.x, self.y)
 
+    def set(self, x, y):
+        self.x = x
+        self.y = y
+
 
 @dataclass
 class Nutrient:

@@ -11,7 +11,7 @@
       <div class="flex-1"></div>
       <div class="button-icon"
         v-if="scriptModified"
-        @click="saveScript">
+        @click="onSave">
         <IconRefresh class="icon"/>
       </div>
       <div class="button-icon button-inactive">
@@ -19,9 +19,9 @@
       </div>
     </div>
 
-    <div class="code-container w-full flex-1">
-      <div class="editor-container ui-element p-2 z-20 relative resize-y">
-        <AceEditor
+    <div class="flex-1 flex flex-col w-full max-h-full">
+      <div class="editor-container ui-element">
+        <AceEditor ref="ace"
           @init="editorInit"
           lang="python"
           theme="dracula"
@@ -29,7 +29,7 @@
           v-model="value"
           />
       </div>
-      <Logger
+      <Logger ref="logger"
         />
     </div>
   </div>
@@ -41,11 +41,13 @@ import IconPause from 'heroicons/outline/pause.svg'
 // import IconBeaker from 'heroicons/outline/beaker.svg'
 import IconHand from 'heroicons/outline/hand.svg'
 import IconRefresh from 'heroicons/outline/save.svg'
-
 import AceEditor from 'vue2-ace-editor'
 import Logger from './Logger'
-
 import eventService from '../services/eventService'
+
+let ace = require('brace')
+let Range = ace.acequire('ace/range').Range
+
 
 export default {
   name: 'CodeEditor',
@@ -56,6 +58,7 @@ export default {
   data() {
     const defaultScript = (`
 print('my pos', cell.position)
+print(1/0)
 for found in cell.scan():
     if type(found) is Nutrient:
         cell.set_destination(found.position)
@@ -67,6 +70,7 @@ if cell.size > 100:
       lastValue: defaultScript,
       value: defaultScript,
 
+      errorMarker: null,
       paused: true,
     }
   },
@@ -79,7 +83,12 @@ if cell.size > 100:
   created() {
     let self = this
     // when ready send initial script
-    eventService.bus.on(eventService.events.ON_READY, self.saveScript)
+    eventService.bus.on(eventService.events.ON_READY, () => {
+      self.onSave()
+      self.onPlayPause()
+    })
+    // on error pause world
+    eventService.bus.on(eventService.events.ERROR, self.onError)
   },
   methods: {
     editorInit() {
@@ -87,15 +96,38 @@ if cell.size > 100:
       require('brace/mode/python')                
       require('brace/theme/dracula')
     },
-    saveScript() {
+    onSave() {
       let self = this
-      eventService.bus.emit(eventService.events.MODIFY_SCRIPT, self.value)
+      self.$refs.logger.error = null
       self.lastValue = self.value
+      self.clearError()
+      eventService.bus.emit(eventService.events.MODIFY_SCRIPT, self.value)
     },
     onPlayPause() {
       let self = this
       self.paused = !self.paused
+      const e = self.paused ?
+        eventService.events.PAUSE_WORLD :
+        eventService.events.PLAY_WORLD
+      eventService.bus.emit(e)
     },
+    onError(lines, ctx) {
+      let self = this
+      if (!self.paused) {
+        self.onPlayPause()
+      }
+      self.clearError()
+      self.errorMarker = self.$refs.ace.editor.session.addMarker(
+        new Range(ctx.line-1, 0, ctx.line-1, Infinity), "error-line", "fullLine"
+      )
+    },
+    clearError() {
+      let self = this
+      if (self.errorMarker !== null) {
+        self.$refs.ace.editor.session.removeMarker(self.errorMarker)
+        self.errorMarker = null
+      }
+    }
   }
 }
 </script>
@@ -103,6 +135,12 @@ if cell.size > 100:
 <style lang="sass">
 
 .editor-container
+  @apply .p-2 .z-20
+  @apply .overflow-hidden .resize-y
   height: 50%
+
+  .error-line
+    @apply .bg-red-700 .relative
+
 
 </style>

@@ -8,6 +8,7 @@ const es = {
     PAUSE_WORLD: 'PAUSE_WORLD',
     PLAY_WORLD: 'PLAY_WORLD',
     PRINT: 'PRINT',
+    ERROR: 'ERROR',
   }
 }
 

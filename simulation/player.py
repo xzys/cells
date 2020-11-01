@@ -1,5 +1,8 @@
 import time
+import sys
 import math
+import traceback
+from js import console
 
 import lib
 import lib.types
@@ -38,9 +41,9 @@ class CellController:
             position: lib.types.Vector,
             size: int,
             ):
-        # cell is added to list after creation
+        self.player = player
+        # cell is added to list after creation, so don't have to do -1
         self.name = 'Cell {}'.format(len(player.cells))
-        self.health = 100
         self.size = size
         self.position = position
         self.velocity = lib.types.Vector(0, 0)
@@ -48,13 +51,10 @@ class CellController:
         self.cell = lib.cell.CellInterface()
         self.stdout = FileBridge(self)
 
+        self.last_step = 0
         self.context = player_context.copy()
         self.context['cell'] = self.cell
         self.context['print'] = self.print
-
-        self.player = player
-        self.script = player.script
-        self.last_step = 0
 
     def step(self, time):
         """run player script on interval
@@ -65,8 +65,29 @@ class CellController:
         self.cell.size = self.size
         self.cell.position = self.position.copy()
         self.cell.velocity = self.velocity.copy()
-        exec(self.script, self.context)
         self.last_step = time
+
+        try:
+            exec(self.player.script, self.context)
+        except Exception as e:
+            cls, exc, tb = sys.exc_info()
+            ss = traceback.extract_tb(tb)
+
+            line_number: int = 0
+            if cls is SyntaxError:
+                line_number = e.lineno
+            else:
+                line_number = ss[-1].lineno
+
+            # strip out the first stack frame since that is our code
+            lines = traceback.format_exception(cls, exc, tb.tb_next)
+            msg = ''.join(lines).strip()
+            # send error event to 
+            event_service.emit(event_service.events.ERROR, msg, {
+                'cell': self.name,
+                'line': line_number,
+                })
+
         return True
 
     def process(self, world, time):
@@ -112,10 +133,6 @@ class FileBridge:
     def __init__(self, cell):
         self.buffer = []
         self.cell = cell
-        self.ctx = {
-                'cell': self.cell.name,
-                'ts': time.time()
-        }
 
     def write(self, s):
         self.buffer.append(s)
@@ -124,8 +141,10 @@ class FileBridge:
             self.flush()
 
     def flush(self):
-        self.ctx['ts'] = time.time()
         msg = ''.join(self.buffer)
-        event_service.emit(event_service.events.PRINT, msg, self.ctx)
+        event_service.emit(event_service.events.PRINT, msg, {
+                'cell': self.cell.name,
+                'ts': time.time(),
+                })
         # faster way of doing clear()
         self.buffer *= 0

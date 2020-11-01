@@ -1,6 +1,6 @@
 from .types import *
 
 __all__ = [
-        'Nutrient', 'Vector',
+        'Nutrient', 'Vector', 'Cell'
 
         ]

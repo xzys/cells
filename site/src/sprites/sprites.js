@@ -32,8 +32,7 @@ class SyncedSprite extends Phaser.Physics.Arcade.Sprite {
     this.displayCircle.y = center.y
     this.displayCircle.radius = this.radius
 
-    this.pyobj.position.x = center.x
-    this.pyobj.position.y = center.y
+    this.pyobj.position.set(center.x, center.y)
   }
 }
 

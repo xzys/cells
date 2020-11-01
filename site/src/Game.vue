@@ -42,11 +42,13 @@ export default {
         MainScene,
         // TestScene
       ],
-      events: {
-        bus: eventService.bus
-      },
     }
     // dont bind to vue to avoid performance hit
+    if (window.game) {
+      console.warn('destroying previus game instance');
+      eventService.bus.removeAllListeners()
+      window.game.destroy(false)
+    }
     window.game = new Phaser.Game(config)
   }
 }

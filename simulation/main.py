@@ -9,8 +9,10 @@ import lib.cell
 
 from player import Player, CellController
 
+
 def run_singleplayer(w, h, script, scene):
     return World(w, h, [Player(script)], scene)
+
 
 class World:
     num_initial_food: int = 100
@@ -81,8 +83,7 @@ class World:
         """update script; right now assume there's only one player"""
         p = self.players[0]
         p.script = script
-        for c in p.cells:
-            c.script = script
+
 
 if __name__ == '__main__':
     print('running in python mode')
