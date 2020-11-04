@@ -1,46 +1,53 @@
 #!/usr/bin/env python
-from random import randint
+import random
 import time
 import math
 
-import lib
-import lib.types
-import lib.cell
-
+from lib.types import Vector, Cell, Nutrient
 from player import Player, CellController
+from quadtree import Quadtree, Rect
 
 
-def run_singleplayer(w, h, script, scene):
-    return World(w, h, [Player(script)], scene)
+def run_singleplayer(world_size, scene):
+    return World(world_size, [Player()], scene)
 
 
 class World:
-    num_initial_food: int = 100
+    food_density: float = 0.0001
+
     min_food_size: float = 10
     max_food_size: float = 10
-    scan_distance: float = 400
+    scan_distance: float = 100
 
     initial_cell_size: int = 50
 
-    def __init__(self, width, height, players, scene):
+    def __init__(self, world_size, players, scene):
         print('setting up world...')
-        self.size = lib.types.Vector(width, height)
+        self.size = Vector(world_size, world_size)
         self.scene = scene
 
         self.nutrients = []
-        for i in range(self.num_initial_food):
-            self.add_nutriend(lib.types.Nutrient(
-                self.random_pos(),
-                randint(self.min_food_size, self.max_food_size)
+        self.nutrients_qt = Quadtree(Rect(0, 0, world_size, world_size)) 
+
+        num_food = int(world_size**2 * self.food_density)
+        for i in range(num_food):
+            pos = self.random_pos()
+            self.add_nutrient(Nutrient(
+                pos,
+                random.randint(self.min_food_size, self.max_food_size)
             ))
 
         self.players = players
         for p in self.players:
-            c = CellController(p, self.random_pos(), self.initial_cell_size)
+            pos = Vector(self.size.x / 2, self.size.y / 2)
+            c = CellController(p, pos, self.initial_cell_size)
             self.add_cell(p, c)
 
     def random_pos(self):
-        return lib.types.Vector(randint(0, self.size.x), randint(0, self.size.y))
+        # return Vector(randint(0, self.size.x), randint(0, self.size.y))
+        a = random.random() * 2 * math.pi
+        r = self.size.x/2 * math.sqrt(random.random())
+        return Vector(self.size.x/2 + r * math.cos(a), self.size.x/2 + r * math.sin(a))
 
     def update(self, time, delta):
         to_process = []
@@ -55,27 +62,40 @@ class World:
 
     def get_nearby(self, cell):
         results = []
-        other_cells = [c for p in self.players for c in p.cells if c is not cell]
+        # other_cells = [c for p in self.players for c in p.cells if c is not cell]
+
+        for n in self.nutrients_qt.query(cell.position, self.scan_distance):
+            results.append(n)
+        return results
+        """
         for x in self.nutrients + other_cells:
             dist = (cell.position - x.position).magnitude()
             if dist < self.scan_distance:
                 # if player, send a proxy that only has position 
                 if type(x) is CellController:
-                    results.append((dist, lib.types.Cell(x.position, x.size)))
+                    results.append((dist, Cell(x.position, x.size)))
                 else:
                     results.append((dist, x))
         return [x for dist, x in sorted(results, key=lambda tup: tup[0])]
+        """
 
-    """add objects to world; sync to js"""
-    def add_nutriend(self, nutrient):
+    def add_nutrient(self, nutrient):
+        """add objects to world; sync to js"""
         self.nutrients.append(nutrient)
-        self.scene.addNutrient(nutrient)
+        self.nutrients_qt.insert(nutrient)
+        self.scene.addNutrient(nutrient, len(self.nutrients)-1)
+
+    def del_nutrient(self, nutrient):
+        """remove nutrient based on index"""
+        self.nutrients_qt.delete(nutrient)
+        self.nutrients.remove(nutrient)
+        self.scene.delNutrient(nutrient)
 
     def add_cell(self, player, cell):
         for p in self.players:
             if p is player:
                 p.cells.append(cell)
-                self.scene.addCell(cell)
+                self.scene.addCell(cell, len(p.cells)-1)
                 return
         raise Exception('player not found')
 

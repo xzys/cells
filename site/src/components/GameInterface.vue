@@ -80,7 +80,7 @@ export default {
     @apply .cursor-pointer .text-center
     @apply .py-1 .px-2
     @apply .flex .flex-row .items-center .justify-center
-    @apply .border .border-gray-400 .shadow-md
+    @apply .shadow-md
 
   .button:hover
     @apply .bg-grey-600

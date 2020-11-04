@@ -35,12 +35,15 @@ class Vector:
 
 
 @dataclass
-class Nutrient:
+class Sprite:
     position: Vector
+
+
+@dataclass
+class Nutrient(Sprite):
     size: int
 
 
 @dataclass
-class Cell:
-    position: Vector
+class Cell(Sprite):
     size: int

@@ -18,6 +18,12 @@
       <br>
       <span>{{ error.msg }}</span>
     </div>
+    <div>
+      <div v-if="stmts.length > 0"
+        class="text-grey-200 hover:text-grey-100 cursor-pointer float-right px-2"
+        @click="clear"
+        >clear</div>
+    </div>
   </div>
 </template>
 
@@ -70,6 +76,11 @@ export default {
       self.$nextTick(() => {
         self.$refs.logger.scrollTop = self.$refs.logger.scrollHeight;
       })
+    },
+    clear() {
+      let self = this
+      self.stmts = []
+      self.error = null
     }
   }
 }
@@ -82,7 +93,6 @@ export default {
   @apply .font-mono .text-xs
   @apply .pt-4 .pb-2 .-mt-2 .z-10
   @apply .overflow-y-scroll
-  max-height: 50vh // need to figure this out
 
   .error-stmt
     @apply .whitespace-pre .bg-red-700 .text-red-200

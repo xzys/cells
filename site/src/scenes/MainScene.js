@@ -12,6 +12,8 @@ class MainScene extends Phaser.Scene {
 
   create() {
     this.cameras.main.setBackgroundColor(C.colors.BACKGROUND)
+    this.cameras.main.setBounds(0, 0, C.worldSize, C.worldSize)
+    this.cameras.main.centerOn(C.worldSize/2, C.worldSize/2)
 
     // camera controls
     const cursors = this.input.keyboard.addKeys({
@@ -42,12 +44,7 @@ class MainScene extends Phaser.Scene {
       bounceY: 1,
     })
 
-    this.world = runSingleplayer(
-      this.sys.game.config.width,
-      this.sys.game.config.height,
-      '',
-      this,
-    )
+    this.world = runSingleplayer(C.worldSize, this)
 
     this.physics.add.collider(this.cells, this.nutrients)
     this.physics.add.collider(this.cells, this.cells) 
@@ -57,6 +54,7 @@ class MainScene extends Phaser.Scene {
     eventService.bus.on(eventService.events.PLAY_WORLD, this.onPlay, this)
     eventService.bus.on(eventService.events.PAUSE_WORLD, this.onPause, this)
     eventService.bus.emit(eventService.events.ON_READY, true)
+    this.physicsInitialized = false
   }
 
   /* event handlers */
@@ -77,14 +75,25 @@ class MainScene extends Phaser.Scene {
   addNutrient(n) {
     this.nutrients.add(new Nutrient(this, n))
   }
+  delNutrient(n) {
+    this.nutrients.children.entries.forEach(n2 => {
+      if (n2.pyobj === n) {
+        n2.destroy()
+      }
+    })
+  }
 
   /* game loop */
   update(time, delta) {
+    // TODO for some reason, sprites are moving some after init
+    if (!this.physicsInitialized) {
+      this.cells.children.entries.forEach(c => c.init())
+      this.nutrients.children.entries.forEach(n => n.init())
+      this.physicsInitialized = true
+    }
+
     if (!this.physics.world.isPaused) {
       this.world.update(time, delta)
-      for (const n of this.nutrients.children.entries) {
-        n.sync()
-      }
       for (const c of this.cells.children.entries) {
         c.processDest()
         c.sync()
@@ -112,7 +121,7 @@ class MainScene extends Phaser.Scene {
         const dist = Math.sqrt((c1.x - c2.x)**2 + (c1.y - c2.y)**2)
         if (dist < c1.radius + c2.radius + C.repelCellDist) {
           const angle = Math.atan2(c1.y - c2.y, c1.x - c2.x)
-          const speed = C.repelCellForce / (dist - c1.radius - c2.radius)
+          const speed = C.repelCellForce / Math.max(dist - c1.radius - c2.radius, 0.01)
 
           const dx = Math.cos(angle) * speed * delta,
                 dy = Math.sin(angle) * speed * delta

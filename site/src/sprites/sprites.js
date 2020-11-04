@@ -17,22 +17,22 @@ class SyncedSprite extends Phaser.Physics.Arcade.Sprite {
     )
   }
 
-  sync() {
-    if (this.pyobj.size <= 0) {
-      this.displayCircle.destroy()
-      this.destroy()
-      return
-    }
-
-    this.radius = radiusFromArea(this.pyobj.size)
+  // initialize after body is created
+  init() {
     this.setCircle(this.radius, -this.radius, -this.radius)
+    this.sync()
+  }
 
+  sync() {
     const center = this.body.center
     this.displayCircle.x = center.x
     this.displayCircle.y = center.y
-    this.displayCircle.radius = this.radius
-
     this.pyobj.position.set(center.x, center.y)
+  }
+  
+  destroy() {
+    this.displayCircle.destroy()
+    super.destroy()
   }
 }
 
@@ -45,6 +45,13 @@ class Nutrient extends SyncedSprite {
 class Cell extends SyncedSprite {
   constructor(scene, pyobj) {
     super(scene, pyobj, 'cell', C.colors.CELLS)
+  }
+
+  sync() {
+    this.radius = radiusFromArea(this.pyobj.size)
+    this.setCircle(this.radius, -this.radius, -this.radius)
+    this.displayCircle.radius = this.radius
+    super.sync()
   }
 
   processDest() {

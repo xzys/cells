@@ -21,7 +21,7 @@ get_radius = lambda size: math.sqrt(size / math.pi)
 
 
 class Player:
-    def __init__(self, script):
+    def __init__(self, script=''):
         self.cells = []
         self.script = script
 
@@ -97,15 +97,13 @@ class CellController:
         self.process_divide(world)
 
     def consume_nutrients(self, world, time):
-        for i, n in enumerate(world.nutrients):
-            if ((self.position - n.position).magnitude() <
-                get_radius(self.size) + get_radius(n.size) + DIST_ERROR_MARGIN):
-
-                n.size -= self.consume_rate
-                if n.size <= 0:
-                    del world.nutrients[i]
-                self.size += min(self.consume_rate, n.size)
-                break
+        dist = get_radius(self.size) + get_radius(world.max_food_size) + DIST_ERROR_MARGIN
+        for n in world.nutrients_qt.query(self.position, dist):
+            n.size -= self.consume_rate
+            if n.size <= 0:
+                world.del_nutrient(n)
+            self.size += min(self.consume_rate, n.size)
+            break
         
     def process_scan(self, world):
         if self.cell.scan_requested:

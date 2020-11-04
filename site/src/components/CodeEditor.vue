@@ -19,8 +19,8 @@
       </div>
     </div>
 
-    <div class="flex-1 flex flex-col w-full max-h-full">
-      <div class="editor-container ui-element">
+    <div class="flex-1 flex flex-col w-full max-h-full" ref="container">
+      <div class="editor-container ui-element" ref="aceContainer">
         <AceEditor ref="ace"
           @init="editorInit"
           lang="python"
@@ -44,6 +44,7 @@ import IconRefresh from 'heroicons/outline/save.svg'
 import AceEditor from 'vue2-ace-editor'
 import Logger from './Logger'
 import eventService from '../services/eventService'
+import _debounce from 'lodash/debounce'
 
 let ace = require('brace')
 let Range = ace.acequire('ace/range').Range
@@ -57,11 +58,12 @@ export default {
   },
   data() {
     const defaultScript = (`
-print('my pos', cell.position)
-print(1/0)
-for found in cell.scan():
+res = sorted(cell.scan(), key=lambda r: (r.position - cell.position).magnitude())
+for found in res:
     if type(found) is Nutrient:
         cell.set_destination(found.position)
+        print('my pos', cell.position, 'found', found)
+        break
 
 if cell.size > 100:
    cell.divide()`).trim()
@@ -80,7 +82,7 @@ if cell.size > 100:
       return self.lastValue !== self.value
     }
   },
-  created() {
+  mounted() {
     let self = this
     // when ready send initial script
     eventService.bus.on(eventService.events.ON_READY, () => {
@@ -89,6 +91,17 @@ if cell.size > 100:
     })
     // on error pause world
     eventService.bus.on(eventService.events.ERROR, self.onError)
+
+    // sometimes on mounted, refs aren't available
+    const setResizeObserver = () => {
+      if (self.$refs.aceContainer) {
+        self.ro = new ResizeObserver(_debounce(self.onResize, 500))
+          .observe(self.$refs.aceContainer)
+      } else {
+        setTimeout(setResizeObserver, 500)
+      }
+    }
+    setResizeObserver()
   },
   methods: {
     editorInit() {
@@ -127,7 +140,17 @@ if cell.size > 100:
         self.$refs.ace.editor.session.removeMarker(self.errorMarker)
         self.errorMarker = null
       }
+    },
+    onResize(e) {
+      let self = this
+      // setting max height because this is hard to control via css
+      // let h = self.$refs.container.clientHeight - self.$refs.aceContainer.clientHeight
+      // self.$refs.logger.$refs.logger.style.maxHeight = `${h}px`
     }
+  },
+  destroyed() {
+    let self = this
+    delete self.ro
   }
 }
 </script>
@@ -136,11 +159,15 @@ if cell.size > 100:
 
 .editor-container
   @apply .p-2 .z-20
-  @apply .overflow-hidden .resize-y
-  height: 50%
+  @apply .resize-y .overflow-hidden
+  min-height: 100px
+  height: 250px
 
   .error-line
     @apply .bg-red-700 .relative
 
+// for now, let's just do this
+.logger
+  max-height: 250px
 
 </style>
