@@ -14,6 +14,7 @@ class MainScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(C.colors.BACKGROUND)
     this.cameras.main.setBounds(0, 0, C.worldSize, C.worldSize)
     this.cameras.main.centerOn(C.worldSize/2, C.worldSize/2)
+    this.cameras.main.zoomTo(1.5)
 
     // camera controls
     const cursors = this.input.keyboard.addKeys({
@@ -45,6 +46,7 @@ class MainScene extends Phaser.Scene {
     })
 
     this.world = runSingleplayer(C.worldSize, this)
+    this.glayer = this.add.graphics()
 
     this.physics.add.collider(this.cells, this.nutrients)
     this.physics.add.collider(this.cells, this.cells) 
@@ -54,33 +56,8 @@ class MainScene extends Phaser.Scene {
     eventService.bus.on(eventService.events.PLAY_WORLD, this.onPlay, this)
     eventService.bus.on(eventService.events.PAUSE_WORLD, this.onPause, this)
     eventService.bus.emit(eventService.events.ON_READY, true)
+    this.input.on('pointerdown', this.onClick)
     this.physicsInitialized = false
-  }
-
-  /* event handlers */
-  onPause() {
-    this.physics.world.isPaused = true
-  }
-  onPlay() {
-    this.physics.world.isPaused = false
-  }
-  onCodeChange(script) {
-    this.world.update_script(script)
-  }
-
-  /* called from python world to sync state */
-  addCell(c) {
-    this.cells.add(new Cell(this, c))
-  }
-  addNutrient(n) {
-    this.nutrients.add(new Nutrient(this, n))
-  }
-  delNutrient(n) {
-    this.nutrients.children.entries.forEach(n2 => {
-      if (n2.pyobj === n) {
-        n2.destroy()
-      }
-    })
   }
 
   /* game loop */
@@ -92,14 +69,16 @@ class MainScene extends Phaser.Scene {
       this.physicsInitialized = true
     }
 
+    this.glayer.clear()
     if (!this.physics.world.isPaused) {
       this.world.update(time, delta)
       for (const c of this.cells.children.entries) {
-        c.processDest()
+        c.processDest(this)
         c.sync()
       }
       this.repelCells(delta)
     }
+    this.drawDestinations()
 
     this.cameraControls.update(delta)
     if (Date.now() - this.debugTextUpdated > 250) {
@@ -107,6 +86,21 @@ class MainScene extends Phaser.Scene {
         `FPS: ${(1000/delta).toFixed(3)}\n` +
         `${this.cells.children.entries.length} cells`)
       this.debugTextUpdated = Date.now()
+    }
+  }
+
+  drawDestinations() {
+    // draw lines to targets
+    for (const c of this.cells.children.entries) {
+      if (c.pyobj.cell.dest) {
+        // this.glayer.setLineDash([5, 5])
+        this.glayer.lineStyle(2, 0x000000, 0.5)
+        this.glayer.beginPath()
+        this.glayer.moveTo(c.pyobj.position.x, c.pyobj.position.y)
+        this.glayer.lineTo(c.pyobj.cell.dest.x, c.pyobj.cell.dest.y)
+        this.glayer.closePath()
+        this.glayer.strokePath()
+      }
     }
   }
 
@@ -131,6 +125,36 @@ class MainScene extends Phaser.Scene {
         }
       }
     }
+  }
+
+  /* event handlers */
+  onPause() {
+    this.physics.world.isPaused = true
+  }
+  onPlay() {
+    this.physics.world.isPaused = false
+  }
+  onCodeChange(script) {
+    this.world.update_script(script)
+  }
+  onClick(pointer) {
+    const w = this.cameras.main.getWorldPoint(pointer.x, pointer.y)
+    eventService.bus.emit(eventService.events.SET_DEST, Math.round(w.x), Math.round(w.y))
+  }
+
+  /* called from python world to sync state */
+  addCell(c) {
+    this.cells.add(new Cell(this, c))
+  }
+  addNutrient(n) {
+    this.nutrients.add(new Nutrient(this, n))
+  }
+  delNutrient(n) {
+    this.nutrients.children.entries.forEach(n2 => {
+      if (n2.pyobj === n) {
+        n2.destroy()
+      }
+    })
   }
 
   destroy() {

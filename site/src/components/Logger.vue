@@ -1,26 +1,30 @@
 <template>
   <div class="logger" ref="logger">
-    <div v-for="(s, i) of stmts" :key="i"
-      class="px-2"
-      >
-      <span class="text-grey-400"
-        >[{{ s.ctx.cell }}]</span>
-      {{ s.msg }}
-      <span v-if="s.count > 1"
-        class="float-right text-grey-500"
-        >x{{ s.count }}</span>
-    </div>
-    <div v-if="error"
-      class="px-2 error-stmt"
-      >
-      <span class="text-red-400"
-        >[Error in {{ error.ctx.cell }}]</span>
-      <br>
-      <span>{{ error.msg }}</span>
-    </div>
+    <template v-if="!hidden">
+      <div v-for="(s, i) of stmts" :key="i"
+        class="px-2"
+        >
+        <span class="text-grey-400"
+          >[{{ s.ctx.cell }}]</span>
+        {{ s.msg }}
+        <span v-if="s.count > 1"
+          class="float-right text-grey-500"
+          >x{{ s.count }}</span>
+      </div>
+      <div v-if="error"
+        class="px-2 error-stmt"
+        >
+        <span class="text-red-400"
+          >[Error in {{ error.ctx.cell }}]</span>
+        <br>
+        <span>{{ error.msg }}</span>
+      </div>
+    </template>
     <div>
-      <div v-if="stmts.length > 0"
-        class="text-grey-200 hover:text-grey-100 cursor-pointer float-right px-2"
+      <div class="text-button float-left"
+        @click="toggleHidden"
+        >{{ hidden ? 'show' : 'hide' }}</div>
+      <div class="text-button float-right"
         @click="clear"
         >clear</div>
     </div>
@@ -43,6 +47,7 @@ export default {
 
       // so duplicate logs don't take up extra space
       countingEnabled: true,
+      hidden: false,
     }
   },
   created() {
@@ -81,6 +86,11 @@ export default {
       let self = this
       self.stmts = []
       self.error = null
+    },
+    toggleHidden() {
+      let self = this
+      self.hidden = !self.hidden
+      self.scrollToBottom()
     }
   }
 }
@@ -90,8 +100,7 @@ export default {
 
 .logger
   @apply .bg-grey-600 .text-white .rounded
-  @apply .font-mono .text-xs
-  @apply .pt-4 .pb-2 .-mt-2 .z-10
+  @apply .pt-3 .pb-1 .-mt-2 .z-10
   @apply .overflow-y-scroll
 
   .error-stmt

@@ -24,8 +24,6 @@ export default {
     const config = {
       type: Phaser.AUTO,
       parent: 'game',
-      width: 800,
-      height: 600,
       physics: {
         default: 'arcade',
         arcade: {
@@ -33,9 +31,12 @@ export default {
           isPaused: true,
         }
       },
+      // roundPixels: true,
+      // antialias: true,
       scale: {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.NO_CENTER,
+        zoom: 1 / window.devicePixelRatio,
       },
       scene: [
         BootScene,
@@ -59,6 +60,5 @@ export default {
 .game-container
   width: 100% !important
   height: 100% !important
-  background: #e5f1e3
 
 </style>

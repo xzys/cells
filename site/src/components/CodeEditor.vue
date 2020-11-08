@@ -1,13 +1,7 @@
 <template>
-  <div class="flex flex-col flex-1">
+  <div class="code-editor-pane flex flex-col flex-1">
+    <!--
     <div class="buttons-row flex mb-2">
-      <div class="button w-24"
-        @click="onPlayPause">
-        <IconPlay class="icon" v-if="paused" />
-        <IconPause class="icon" v-else />
-        {{ paused ? 'Play' : 'Pause'}}
-      </div>
-
       <div class="flex-1"></div>
       <div class="button-icon"
         v-if="scriptModified"
@@ -18,8 +12,13 @@
         <IconHand class="icon"/>
       </div>
     </div>
+    -->
 
     <div class="flex-1 flex flex-col w-full max-h-full" ref="container">
+      <div class="pane-header">
+        <div class="text-button float-right"
+          >save</div>
+      </div>
       <div class="editor-container ui-element" ref="aceContainer">
         <AceEditor ref="ace"
           @init="editorInit"
@@ -36,11 +35,9 @@
 </template>
 
 <script>
-import IconPlay from 'heroicons/outline/play.svg'
-import IconPause from 'heroicons/outline/pause.svg'
 // import IconBeaker from 'heroicons/outline/beaker.svg'
-import IconHand from 'heroicons/outline/hand.svg'
-import IconRefresh from 'heroicons/outline/save.svg'
+// import IconHand from 'heroicons/outline/hand.svg'
+// import IconRefresh from 'heroicons/outline/save.svg'
 import AceEditor from 'vue2-ace-editor'
 import Logger from './Logger'
 import eventService from '../services/eventService'
@@ -54,10 +51,10 @@ export default {
   name: 'CodeEditor',
   components: {
     AceEditor, Logger,
-    IconPlay, IconPause, IconRefresh, IconHand,
+    // IconRefresh, IconHand,
   },
   data() {
-    const defaultScript = (`
+    let defaultScript = (`
 res = sorted(cell.scan(), key=lambda r: (r.position - cell.position).magnitude())
 for found in res:
     if type(found) is Nutrient:
@@ -67,13 +64,13 @@ for found in res:
 
 if cell.size > 100:
    cell.divide()`).trim()
+    defaultScript = '# write your code here'
 
     return {
       lastValue: defaultScript,
       value: defaultScript,
 
       errorMarker: null,
-      paused: true,
     }
   },
   computed: {
@@ -84,15 +81,13 @@ if cell.size > 100:
   },
   mounted() {
     let self = this
-    // when ready send initial script
-    eventService.bus.on(eventService.events.ON_READY, () => {
-      self.onSave()
-      self.onPlayPause()
-    })
     // on error pause world
     eventService.bus.on(eventService.events.ERROR, self.onError)
+    // 
+    eventService.bus.on(eventService.events.SET_DEST, self.setDestination)
 
     // sometimes on mounted, refs aren't available
+    /*
     const setResizeObserver = () => {
       if (self.$refs.aceContainer) {
         self.ro = new ResizeObserver(_debounce(self.onResize, 500))
@@ -102,6 +97,7 @@ if cell.size > 100:
       }
     }
     setResizeObserver()
+    */
   },
   methods: {
     editorInit() {
@@ -113,22 +109,23 @@ if cell.size > 100:
       let self = this
       self.$refs.logger.error = null
       self.lastValue = self.value
-      self.clearError()
       eventService.bus.emit(eventService.events.MODIFY_SCRIPT, self.value)
+      self.clearError()
     },
-    onPlayPause() {
+    setDestination(x, y) {
       let self = this
-      self.paused = !self.paused
-      const e = self.paused ?
-        eventService.events.PAUSE_WORLD :
-        eventService.events.PLAY_WORLD
-      eventService.bus.emit(e)
+      let lines = self.value.split('\n')
+      const stmt = `cell.set_destination(${x}, ${y}) # set from click`
+      if (lines[lines.length - 1].startsWith('cell.set_destination')) {
+        lines[lines.length - 1] = stmt
+      } else {
+        lines.push(stmt)
+      }
+      self.value = lines.join('\n')
+      self.onSave()
     },
     onError(lines, ctx) {
       let self = this
-      if (!self.paused) {
-        self.onPlayPause()
-      }
       self.clearError()
       self.errorMarker = self.$refs.ace.editor.session.addMarker(
         new Range(ctx.line-1, 0, ctx.line-1, Infinity), "error-line", "fullLine"
@@ -157,17 +154,24 @@ if cell.size > 100:
 
 <style lang="sass">
 
-.editor-container
-  @apply .p-2 .z-20
-  @apply .resize-y .overflow-hidden
-  min-height: 100px
-  height: 250px
+.code-editor-pane
+  @apply .pointer-events-auto
 
-  .error-line
-    @apply .bg-red-700 .relative
+  .editor-container
+    @apply .p-2 .z-20
+    @apply .resize-y .overflow-hidden
+    min-height: 100px
+    height: 250px
 
-// for now, let's just do this
-.logger
-  max-height: 250px
+    .error-line
+      @apply .bg-red-700 .relative
+
+  .pane-header
+    @apply .bg-grey-900 .rounded
+    @apply .pb-3 .pt-1 .-mb-2 .z-10
+
+  // for now, let's just do this
+  .logger
+    max-height: 250px
 
 </style>

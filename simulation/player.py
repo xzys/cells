@@ -27,8 +27,7 @@ class Player:
 
 
 class CellController:
-    max_accel: float = 100
-    drag_coeff: float = 1/10
+    max_accel: float = 150
     size_coeff: float = 1/10
 
     consume_rate: float = 2

@@ -17,8 +17,6 @@ class BootScene extends Phaser.Scene {
   }
 
   create() {
-    this.cameras.main.setBackgroundColor(C.colors.BACKGROUND)
-
     this.loadPyodide().then(() => {
       this.loadSimulation(window.pyodide)
       this.scene.start('MainScene');

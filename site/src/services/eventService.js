@@ -7,6 +7,7 @@ const es = {
     MODIFY_SCRIPT: 'MODIFY_SCRIPT',
     PAUSE_WORLD: 'PAUSE_WORLD',
     PLAY_WORLD: 'PLAY_WORLD',
+    SET_DEST: 'SET_DEST',
     PRINT: 'PRINT',
     ERROR: 'ERROR',
   }
