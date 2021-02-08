@@ -23,6 +23,9 @@
     <CodeEditor :class="{'hidden': !panes[0].active}"
       />
     <div class="flex-1"></div>
+
+    <!-- floating elements -->
+    <CellTooltip/>
   </div>
 </template>
 
@@ -60,13 +63,14 @@ export default {
           active: false,
           icon: 'IconChat',
         },
+        */
         {
           active: false,
           icon: 'IconSettings',
         },
-        */
       ],
       paused: true,
+      selected: null,
     }
   },
   created() {
@@ -75,6 +79,7 @@ export default {
     eventService.bus.on(eventService.events.ON_READY, self.onPlayPause)
     // pause on error
     eventService.bus.on(eventService.events.ERROR, self.onError)
+    eventService.bus.on(eventService.events.SELECT_CELL, self.onSelectCell)
   },
 
   methods: {
@@ -90,6 +95,12 @@ export default {
       let self = this
       if (!self.paused) {
         self.onPlayPause()
+      }
+    },
+    onSelectCell(cell) {
+      let self = this
+      self.selected = {
+        name: cell.name
       }
     }
   }

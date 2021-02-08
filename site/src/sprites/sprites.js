@@ -45,6 +45,20 @@ class Nutrient extends SyncedSprite {
 class Cell extends SyncedSprite {
   constructor(scene, pyobj) {
     super(scene, pyobj, 'cell', C.colors.CELLS)
+
+    this.setInteractive({
+      hitArea: this.displayCircle,
+      hitAreaCallback: Cell.GetContains(5), // 
+      useHandCursor: true,
+    })
+    this.selected = false
+  }
+
+  // arc don't have a native contains method, also build in a buffer area
+  static GetContains(buffer) {
+    return (arc, x, y) => {
+      return (x**2 + y**2) <= (arc.radius + buffer)**2
+    }
   }
 
   sync() {
@@ -79,6 +93,39 @@ class Cell extends SyncedSprite {
       this.setAcceleration(force.x / mass, force.y / mass)
     } else {
       this.setAcceleration(0, 0)
+    }
+  }
+
+  render(t, graphics) {
+    // draw destination
+    if (this.pyobj.cell.dest) {
+      graphics.lineStyle(0.5, C.colors.BLACK)
+      graphics.beginPath()
+      graphics.moveTo(this.body.center.x, this.body.center.y)
+      graphics.lineTo(this.pyobj.cell.dest.x, this.pyobj.cell.dest.y)
+      graphics.closePath()
+      graphics.strokePath()
+    }
+
+    // console.log('ts', t % period);
+    // draw circle around this if selected
+    if (this.selected) {
+      const period = 1000,
+            minRadius = 4,
+            fxRadius = 10
+
+      const fx = ((t % period) / period) * fxRadius,
+            alpha = (1 - (fx/fxRadius))**2
+
+      graphics.lineStyle(1, C.colors.SELECTION, alpha)
+      graphics.beginPath()
+      graphics.arc(
+        this.body.center.x, this.body.center.y,
+        this.radius + minRadius + fx,
+        0,
+        Math.PI * 2,
+      )
+      graphics.strokePath()
     }
   }
 }

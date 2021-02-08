@@ -22,17 +22,17 @@ export default {
   },
   created() {
     const config = {
-      type: Phaser.AUTO,
+      type: Phaser.WEGBL,
       parent: 'game',
       physics: {
         default: 'arcade',
         arcade: {
-          // debug: true
+          // debug: true,
           isPaused: true,
         }
       },
       // roundPixels: true,
-      // antialias: true,
+      antialias: true,
       scale: {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.NO_CENTER,
@@ -44,11 +44,12 @@ export default {
         // TestScene
       ],
     }
+
     // dont bind to vue to avoid performance hit
     if (window.game) {
       console.warn('destroying previus game instance');
       eventService.bus.removeAllListeners()
-      window.game.destroy(false)
+      window.game.destroy()
     }
     window.game = new Phaser.Game(config)
   }

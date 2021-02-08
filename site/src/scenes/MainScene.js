@@ -14,7 +14,9 @@ class MainScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(C.colors.BACKGROUND)
     this.cameras.main.setBounds(0, 0, C.worldSize, C.worldSize)
     this.cameras.main.centerOn(C.worldSize/2, C.worldSize/2)
-    this.cameras.main.zoomTo(1.5)
+    this.cameras.main.zoomTo(1.5, 1000, 'Cubic')
+
+    window.main = this
 
     // camera controls
     const cursors = this.input.keyboard.addKeys({
@@ -34,6 +36,7 @@ class MainScene extends Phaser.Scene {
       speed: 0.5
     })
 
+    // for showing fps, cell counts
     this.debugText = document.getElementById('debug-text')
     this.debugTextUpdated = Date.now()
 
@@ -46,10 +49,11 @@ class MainScene extends Phaser.Scene {
     })
 
     this.world = runSingleplayer(C.worldSize, this)
-    this.glayer = this.add.graphics()
+    this.graphics = this.add.graphics()
 
     this.physics.add.collider(this.cells, this.nutrients)
     this.physics.add.collider(this.cells, this.cells) 
+    this.physicsInitialized = 2
 
     // setup event handlers
     eventService.bus.on(eventService.events.MODIFY_SCRIPT, this.onCodeChange, this)
@@ -57,28 +61,32 @@ class MainScene extends Phaser.Scene {
     eventService.bus.on(eventService.events.PAUSE_WORLD, this.onPause, this)
     eventService.bus.emit(eventService.events.ON_READY, true)
     this.input.on('pointerdown', this.onClick)
-    this.physicsInitialized = false
+
+    // selected cell
+    this.selectedCell = null
+    this.input.on('gameobjectdown', this.onSelectCell) 
   }
 
   /* game loop */
   update(time, delta) {
-    // TODO for some reason, sprites are moving some after init
-    if (!this.physicsInitialized) {
+    // TODO for some reason, sprites are moving some for 2 frames
+    if (this.physicsInitialized > 0) {
       this.cells.children.entries.forEach(c => c.init())
       this.nutrients.children.entries.forEach(n => n.init())
-      this.physicsInitialized = true
+      this.physicsInitialized -= 1
     }
 
-    this.glayer.clear()
+    this.graphics.clear()
     if (!this.physics.world.isPaused) {
       this.world.update(time, delta)
       for (const c of this.cells.children.entries) {
         c.processDest(this)
         c.sync()
+        // any extra vector graphics we need to draw
+        c.render(time, this.graphics)
       }
       this.repelCells(delta)
     }
-    this.drawDestinations()
 
     this.cameraControls.update(delta)
     if (Date.now() - this.debugTextUpdated > 250) {
@@ -89,20 +97,6 @@ class MainScene extends Phaser.Scene {
     }
   }
 
-  drawDestinations() {
-    // draw lines to targets
-    for (const c of this.cells.children.entries) {
-      if (c.pyobj.cell.dest) {
-        // this.glayer.setLineDash([5, 5])
-        this.glayer.lineStyle(2, 0x000000, 0.5)
-        this.glayer.beginPath()
-        this.glayer.moveTo(c.pyobj.position.x, c.pyobj.position.y)
-        this.glayer.lineTo(c.pyobj.cell.dest.x, c.pyobj.cell.dest.y)
-        this.glayer.closePath()
-        this.glayer.strokePath()
-      }
-    }
-  }
 
   // a repelling force between cells that helps ease the buggy collisions
   repelCells(delta) {
@@ -140,6 +134,19 @@ class MainScene extends Phaser.Scene {
   onClick(pointer) {
     const w = this.cameras.main.getWorldPoint(pointer.x, pointer.y)
     eventService.bus.emit(eventService.events.SET_DEST, Math.round(w.x), Math.round(w.y))
+  }
+  onSelectCell(pointer, cell) {
+    if (!(cell instanceof Cell)) {
+      return
+    }
+
+    if (this.selectedCell) {
+      this.selectedCell.selected = false
+    }
+    cell.selected = true
+
+    this.selectedCell = cell
+    this.cameras.main.startFollow(cell)
   }
 
   /* called from python world to sync state */

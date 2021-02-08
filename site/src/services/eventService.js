@@ -8,6 +8,7 @@ const es = {
     PAUSE_WORLD: 'PAUSE_WORLD',
     PLAY_WORLD: 'PLAY_WORLD',
     SET_DEST: 'SET_DEST',
+    SELECT_CELL: 'SELECT_CELL',
     PRINT: 'PRINT',
     ERROR: 'ERROR',
   }

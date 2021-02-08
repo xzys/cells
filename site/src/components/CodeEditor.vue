@@ -1,5 +1,27 @@
 <template>
-  <div class="code-editor-pane flex flex-col flex-1">
+  <div class="code-editor-pane flex flex-col flex-1" ref="container">
+    <!--
+    <div class="flex-1 flex flex-col w-full max-h-full">
+    </div>
+    -->
+    <div class="pane-header">
+      <div class="text-button float-right"
+        @click="onSave"
+        >save</div>
+    </div>
+    <div class="editor-container ui-element" ref="aceContainer">
+      <AceEditor ref="ace"
+        @init="editorInit"
+        lang="python"
+        theme="dracula"
+        width="100%" height="100%"
+        v-model="value"
+        />
+    </div>
+    <Logger ref="logger"
+      />
+  </div>
+
     <!--
     <div class="buttons-row flex mb-2">
       <div class="flex-1"></div>
@@ -14,24 +36,6 @@
     </div>
     -->
 
-    <div class="flex-1 flex flex-col w-full max-h-full" ref="container">
-      <div class="pane-header">
-        <div class="text-button float-right"
-          >save</div>
-      </div>
-      <div class="editor-container ui-element" ref="aceContainer">
-        <AceEditor ref="ace"
-          @init="editorInit"
-          lang="python"
-          theme="dracula"
-          width="100%" height="100%"
-          v-model="value"
-          />
-      </div>
-      <Logger ref="logger"
-        />
-    </div>
-  </div>
 </template>
 
 <script>
@@ -83,7 +87,7 @@ if cell.size > 100:
     let self = this
     // on error pause world
     eventService.bus.on(eventService.events.ERROR, self.onError)
-    // 
+    // edit script to set destination
     eventService.bus.on(eventService.events.SET_DEST, self.setDestination)
 
     // sometimes on mounted, refs aren't available
@@ -107,16 +111,19 @@ if cell.size > 100:
     },
     onSave() {
       let self = this
-      self.$refs.logger.error = null
-      self.lastValue = self.value
       eventService.bus.emit(eventService.events.MODIFY_SCRIPT, self.value)
+      self.lastValue = self.value
+      self.$refs.logger.error = null
       self.clearError()
     },
     setDestination(x, y) {
       let self = this
       let lines = self.value.split('\n')
+
       const stmt = `cell.set_destination(${x}, ${y}) # set from click`
-      if (lines[lines.length - 1].startsWith('cell.set_destination')) {
+      if (lines[lines.length - 1].startsWith('cell.set_destination') ||
+        lines.length == 1 && !!lines[0]
+      ) {
         lines[lines.length - 1] = stmt
       } else {
         lines.push(stmt)
@@ -155,11 +162,12 @@ if cell.size > 100:
 <style lang="sass">
 
 .code-editor-pane
-  @apply .pointer-events-auto
 
   .editor-container
     @apply .p-2 .z-20
     @apply .resize-y .overflow-hidden
+    @apply .pointer-events-auto
+
     min-height: 100px
     height: 250px
 
@@ -169,9 +177,11 @@ if cell.size > 100:
   .pane-header
     @apply .bg-grey-900 .rounded
     @apply .pb-3 .pt-1 .-mb-2 .z-10
+    @apply .pointer-events-auto
 
   // for now, let's just do this
   .logger
+    @apply .pointer-events-auto
     max-height: 250px
 
 </style>
