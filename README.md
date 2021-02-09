@@ -1,5 +1,5 @@
-Cells Game
-----------
+Cells
+-----
 
 [todo](ol.txt)
 [API docs](docs.md)
